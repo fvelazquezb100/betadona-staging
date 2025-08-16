@@ -26,8 +26,8 @@ create trigger on_auth_user_created
 -- Remove the broad select policy if it exists
 drop policy if exists "Profiles are viewable by authenticated users" on public.profiles;
 
--- Create owner-only select policy
-create policy if not exists "Users can view their own profile"
+-- Create owner-only select policy (Corrected)
+create policy "Users can view their own profile"
   on public.profiles
   for select
   to authenticated
@@ -37,7 +37,7 @@ create policy if not exists "Users can view their own profile"
 alter table public.bets
   add column if not exists fixture_id bigint;
 
--- 5) Helper RPCs for scheduling via pg_cron and points increment
+-- 5) Helper RPCs, etc... (The rest of the file is the same)
 create or replace function public.schedule_one_time_http_call(
   job_name text,
   schedule text,
@@ -61,9 +61,7 @@ begin
   return job_id;
 end;
 $$;
-
 grant execute on function public.schedule_one_time_http_call(text, text, text, text, jsonb) to authenticated;
-
 drop function if exists public.unschedule_job(text);
 create or replace function public.unschedule_job(job_name text)
 returns void
@@ -74,9 +72,7 @@ begin
   perform cron.unschedule(job_name);
 end;
 $$;
-
 grant execute on function public.unschedule_job(text) to authenticated;
-
 create or replace function public.increment_user_points(_user uuid, _delta numeric)
 returns void
 language sql
@@ -86,11 +82,9 @@ as $$
   set total_points = coalesce(total_points, 0) + coalesce(_delta, 0)
   where id = _user;
 $$;
-
 grant execute on function public.increment_user_points(uuid, numeric) to authenticated;
 
--- 6) Secure weekly cron job to kick off odds caching every Friday at 10:00 UTC
--- Remove old if exists, then create fresh
+-- 6) Secure weekly cron job
 DO $$
 BEGIN
   IF exists (select 1 from cron.job where jobname = 'weekly_update_football_cache') THEN
