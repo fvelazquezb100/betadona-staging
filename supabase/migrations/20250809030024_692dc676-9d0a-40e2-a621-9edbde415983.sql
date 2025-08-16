@@ -1,5 +1,3 @@
--- Add fixture_id column to bets table to link bets to specific matches
-ALTER TABLE public.bets ADD COLUMN fixture_id INTEGER;
 
 -- Create an index for better performance when querying by fixture_id
 CREATE INDEX idx_bets_fixture_id ON public.bets(fixture_id);
